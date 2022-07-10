@@ -1,0 +1,209 @@
+<!--参考源码地址 https://github.com/HoangTran0410/3DCarousel -->
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="Author" content="只会切图的前端">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>李嘉萌</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+            }
+
+            html, body {
+                height: 100%;
+                touch-action: none;
+            }
+
+            /* perspective指定了观察者与 z=0 平面的距离，使具有三维位置变换的元素产生透视效果。 */
+            body {
+                overflow: hidden;
+                display: flex;
+                perspective: 1000px;
+                background: #111;
+            }
+
+            #dragBox,#spinBox {
+                position: relative;
+                display: flex;
+                margin: auto;
+                transform-style: preserve-3d;
+                transform: rotateX(-10deg);
+            }
+
+            #spinBox {
+                width: 120px;
+                height: 140px;
+                animation: spin 200s infinite linear;
+            }
+
+            #dragBox img,#dragBox video {
+                transform-style: preserve-3d;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                box-shadow: 0 0 8px #fff;
+                /* 倒影 */
+                -webkit-box-reflect: below 10px linear-gradient(transparent, transparent,#0005);
+            }
+
+            #dragBox img:hover,#dragBox video:hover {
+                box-shadow: 0 0 15px #fff;
+            }
+
+            .word {
+                width: 100%;
+                height: 50px;
+                line-height: 50px;
+                text-align: center;
+                font-size: 16px;
+                color: #fff;
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                transform: translate(-50%,-50%) rotateX(90deg);
+            }
+
+            /* 地板发光 */
+            .ground {
+                width: 900px;
+                height: 900px;
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                transform: translate(-50%,-50%) rotateX(90deg);
+                background: -webkit-radial-gradient(center center, farthest-side, #99999961,transparent);
+            }
+
+            /*  自动旋转 */
+            @keyframes spin {
+                from {
+                    transform: rotateY(0deg);
+                }
+
+                to {
+                    transform: rotateY(360deg);
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div id="dragBox">
+            <div id="spinBox">
+                <img src="img/1.webp">
+                <img src="img/2.webp">
+                <img src="img/3.webp">
+                <img src="img/4.webp">
+                <img src="img/6.webp">
+                <img src="img/7.webp">
+                <img src="img/8.webp">
+                <video autoplay="autoplay" loop id="videoDom">
+                    <source src="123.mp4" type="video/mp4"></source>
+                </video>
+                <p class="word">谁的青春不迷茫</p>
+            </div>
+            <div class="ground"></div>
+        </div>
+        <script>
+            let radius = 240;
+            //相册展开大小
+            let outDom = document.getElementById("dragBox");
+            let spinDom = document.getElementById("spinBox");
+            let aImg = spinDom.getElementsByTagName('img');
+            let videoDom = document.getElementById('videoDom');
+            let aEle = [...aImg, videoDom];
+            function init(delayTime) {
+                for (let i = 0; i < aEle.length; i++) {
+                    //给元素加动画 展开 
+                    aEle[i].style.transform = "rotateY(" + (i * (360 / aEle.length)) + "deg) translateZ(" + radius + "px)";
+                    aEle[i].style.transition = "transform 1s";
+                    aEle[i].style.transitionDelay = delayTime || (aEle.length - i) / 4 + "s";
+
+                }
+            }
+            setTimeout(init, 1000);
+            //播放视频
+            document.onclick = function() {
+                if (videoDom) {
+                    videoDom.play();
+                }
+            }
+            //鼠标滚动事件
+            document.onmousewheel = function(e) {
+                e || e.window.event;
+                let d = e.wheelDelta / 20 || -e.detail;
+                radius += d;
+                //展开大小
+                init(1);
+            }
+
+            //暂停开始旋转
+            function playSpin(yes) {
+                spinDom.style.animationPlayState = (yes ? 'running' : 'paused');
+            }
+
+            function changeRotate(obj) {
+                // X轴旋转0-180度
+                if (tY > 180)
+                    tY = 180;
+                if (tY < 0)
+                    tY = 0;
+                // y轴旋转角度不限制
+                obj.style.transform = "rotateX(" + (-tY) + "deg) rotateY(" + (tX) + "deg)";
+            }
+            let startX, startY, endX, endY, tX = 0, tY = 10, dexX = 0, dexY = 0;
+            //鼠标移动事件
+            document.onpointerdown = function(e) {
+                //清除惯性定时器
+                clearInterval(outDom.timer);
+                e = e || window.event;
+                //鼠标点击位置
+                startX = e.clientX,
+                startY = e.clientY;
+
+                this.onpointermove = function(e) {
+                    playSpin(false);
+                    //鼠标点击时 停止自动旋转  //鼠标点击时 停止自动旋转 
+                    e = e || window.event;
+                    //记录结束时位置
+
+                    endX = e.clientX,
+                    endY = e.clientY;
+                    //计算移动距离 并修改角度
+                    desX = endX - startX;
+                    desY = endY - startY;
+                    tX += desX * 0.1;
+                    tY += desY * 0.1;
+                    changeRotate(outDom);
+                    startX = endX;
+                    startY = endY;
+
+                }
+                //鼠标离开时 开始自动旋转  
+                this.onpointerup = function(e) {
+                        //惯性旋转
+                    outDom.timer = setInterval(function() {
+                        desX *= 0.95;
+                        desY *= 0.95;
+                        tX += desX * 0.1;
+                        tY += desY * 0.1;
+                        changeRotate(outDom);
+                        playSpin(false);
+                        if (Math.abs(desX) < 0.5 && Math.abs(desY) < 0.5) {
+                            clearInterval(outDom.timer);
+                            playSpin(true);
+                        }
+                    })
+
+                    this.onpointermove = this.onpointerup = null;
+                }
+                return false;
+            }
+        </script>
+    </body>
+</html>
