@@ -1,0 +1,223 @@
+<!--参考源码地址 https://github.com/HoangTran0410/3DCarousel -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="Author" content="只会切图的前端">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title></title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+            touch-action: none;
+        }
+
+        body {
+            overflow: hidden;
+            display: flex;
+            background: #111;
+            perspective: 1000px;
+            /* perspective指定了观察者与 z=0 平面的距离，使具有三维位置变换的元素产生透视效果。 */
+        }
+
+        #dragBox,
+        #spinBox {
+            position: relative;
+            display: flex;
+            margin: auto;
+            transform-style: preserve-3d;
+            transform: rotateX(-10deg);
+            /* rotateX它可以让一个元素围绕横坐标(水平轴)旋转，而不会对其进行变形 */
+        }
+
+        #spinBox {
+            width: 120px;
+            height: 140px;
+            animation: spin 60s infinite linear;
+        }
+
+
+        #dragBox img,
+        #dragBox video {
+            transform-style: preserve-3d;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: 0 0 8px #fff;
+            -webkit-box-reflect: below 10px linear-gradient(transparent, transparent, #0005);
+        }
+
+        #dragBox img:hover,
+        #dragBox video:hover {
+            box-shadow: 0 0 15px #fffd;
+
+        }
+
+        .word {
+            width: 100%;
+            height: 50px;
+            line-height: 50px;
+            text-align: center;
+            font-size: 16px;
+            color: #fff;
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotateX(90deg);
+        }
+
+        #ground {
+            width: 900px;
+            height: 900px;
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotateX(90deg);
+            background: -webkit-radial-gradient(center center, farthest-side, #9993, transparent);
+        }
+
+
+        @keyframes spin {
+            from {
+                -webkit-transform: rotateY(0deg);
+                transform: rotateY(0deg);
+            }
+
+            to {
+                -webkit-transform: rotateY(360deg);
+                transform: rotateY(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="dragBox">
+        <div id="spinBox">
+            <img src="img/1.webp">
+            <img src="img/2.webp">
+            <img src="img/3.webp">
+            <img src="img/4.webp">
+            <img src="img/6.webp">
+            <img src="img/7.webp">
+            <img src="img/8.webp">
+            <video controls autoplay="autoplay" loop id="videoDom">
+                <source src="123.mp4" type="video/mp4">
+            </video>
+            <p class="word">谁的青春不迷茫</p>
+        </div>
+        <div id="ground"></div>
+    </div>
+
+    <script>
+        let radius = 240; //展开大小
+
+        let outDom = document.getElementById('dragBox');
+        let spinDom = document.getElementById('spinBox');
+
+        let aImg = spinDom.getElementsByTagName('img');
+        let videoDom = document.getElementById('videoDom');
+        let aEle = [...aImg, videoDom]; // combine 2 arrays
+
+        function init(delayTime) {
+            for (let i = 0; i < aEle.length; i++) {
+                aEle[i].style.transform = "rotateY(" + (i * (360 / aEle.length)) + "deg) translateZ(" + radius + "px)";
+                aEle[i].style.transition = "transform 1s";
+                aEle[i].style.transitionDelay = delayTime || (aEle.length - i) / 4 + "s";
+            }
+        }
+        setTimeout(init, 1000);
+
+        let startX, startY, endX, endY, desX = 0,
+            desY = 0,
+            tX = 0,
+            tY = 10;
+
+        document.onclick = function () {
+            if (videoDom) { //点击屏幕时播放视频
+                videoDom.play();
+            }
+        }
+
+        //暂停开始旋转
+        function playSpin(yes) {
+            spinDom.style.animationPlayState = (yes ? 'running' : 'paused');
+        }
+
+        function changeRotate(obj) {
+            // X轴旋转0-180度
+            if (tY > 180) tY = 180;
+            if (tY < 0) tY = 0;
+
+            // y轴旋转角度不限制
+            obj.style.transform = "rotateX(" + (-tY) + "deg) rotateY(" + (tX) + "deg)";
+        }
+
+        // setup events
+        document.onpointerdown = function (e) {
+            console.log("onpointerdown")
+            clearInterval(outDom.timer);
+            e = e || window.event;
+            //鼠标点击位置
+            let startX = e.clientX,
+                startY = e.clientY;
+
+            //鼠标拖动
+            this.onpointermove = function (e) {
+                console.log("onpointermove")
+                playSpin(false);//停止自动旋转
+                e = e || window.event;
+                let endX = e.clientX,
+                    endY = e.clientY;
+                desX = endX - startX;
+                desY = endY - startY;
+                tX += desX * 0.1;
+                tY += desY * 0.1;
+                changeRotate(outDom);
+                startX = endX;
+                startY = endY;
+                
+            };
+
+            this.onpointerup = function (e) {
+                console.log("onpointerup")
+                //设置移动结束时惯性 旋转
+                outDom.timer = setInterval(function () {
+                    desX *= 0.95;
+                    desY *= 0.95;
+                    tX += desX * 0.1;
+                    tY += desY * 0.1;
+                    changeRotate(outDom);
+                    playSpin(false);
+                    if (Math.abs(desX) < 0.5 && Math.abs(desY) < 0.5) {
+                        clearInterval(outDom.timer);
+                        playSpin(true);
+                    }
+                }, 17);
+                this.onpointermove = this.onpointerup = null;
+            };
+
+            return false;
+        };
+
+        //鼠标滚动事件
+        document.onmousewheel = function (e) {
+            e = e || window.event;
+            let d = e.wheelDelta / 20 || -e.detail;
+            radius += d;
+            init(1);
+        };
+    </script>
+</body>
+
+</html>
